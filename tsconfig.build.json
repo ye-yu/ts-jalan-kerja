@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./out/.tsbuildinfo" /* Specify the path to .tsbuildinfo incremental compilation file. */,
+    "module": "commonjs" /* Specify what module code is generated. */,
+    "outDir": "./out" /* Specify an output folder for all emitted files. */
+  },
+  "include": ["src"]
+}
