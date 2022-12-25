@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import { METHODS_TOKEN } from "./constants/methods-token.constant";
 import { generateClassToken } from "./utils/generate-class-token.util";
-import { info } from "./utils/log.util";
 import { trimDecoratorStackTrace } from "./utils/trim-decorator-stack-trace.util";
 
 /**
@@ -48,7 +47,6 @@ export const PengendaliJalanKerja: (config?: {
           stack
         );
       }
-      info({ paramTypes, method });
     }
   };
 };
