@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { DEPENDENCIES_TOKEN } from "./constants/dependencies-token.constant";
 import { METHODS_TOKEN } from "./constants/methods-token.constant";
 import { IJalanKerjaConfig } from "./interfaces/jalan-kerja-config.interface";
-import { IJalanKerja } from "./interfaces/jalan-kerja.interface";
+import { IPengendaliJalanKerja } from "./interfaces/pengendali-jalan-kerja.interface";
 import { generateClassToken } from "./utils/generate-class-token.util";
 import { trimDecoratorStackTrace } from "./utils/trim-decorator-stack-trace.util";
 
@@ -20,7 +20,7 @@ type WorkflowProfile = {
 
 export class JalanKerjaAsas<
   T extends { [name: string]: (...p: any[]) => Promise<void> }
-> implements IJalanKerja<T>
+> implements IPengendaliJalanKerja<T>
 {
   workflowId = "";
   workflowProfile: WorkflowProfile = {};
@@ -113,7 +113,7 @@ export class JalanKerjaAsas<
 export function compileJalanKerja<T>(
   Pengendali: NoParamConstructorType<T>,
   overrideDependencies: IJalanKerjaConfig["dependencies"] = []
-): IJalanKerja<T> {
+): IPengendaliJalanKerja<T> {
   const instance: any = new Pengendali();
   const dependenciesToken = generateClassToken(DEPENDENCIES_TOKEN);
   const dependenciesConfig: IJalanKerjaConfig["dependencies"] =
@@ -167,7 +167,7 @@ export function compileJalanKerja<T>(
     }
     dependencies.set(key, paramTypes);
   }
-  const pengendali: IJalanKerja<T> = new JalanKerjaAsas(
+  const pengendali: IPengendaliJalanKerja<T> = new JalanKerjaAsas(
     instance,
     dependenciesMap,
     dependencies,
