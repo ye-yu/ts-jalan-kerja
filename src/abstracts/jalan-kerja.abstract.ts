@@ -9,7 +9,7 @@ export abstract class JalanKerjaAsas<T> {
   } = {};
   getOutputFromWorkflow<K extends keyof T>(
     name: K
-  ): this["outputs"][K] | undefined {
+  ): T[K] extends (...args: any) => any ? ReturnType<T[K]> : any {
     const value = this.outputs[name];
     if (!value?.finished)
       throw new Error(`Workflow ${String(name)} is not yet finished!`);
@@ -17,7 +17,10 @@ export abstract class JalanKerjaAsas<T> {
   }
   setOutputFromWorkflow<K extends keyof T>(name: K, value: any): void {
     Object.defineProperty(this.outputs, name, {
-      value,
+      get: () => ({
+        finished: true,
+        value,
+      }),
     });
   }
 }
