@@ -15,10 +15,12 @@
     "ts-jest": "^29.0.3",
     "typescript": "^4.9.4"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@nestjs/common": "*",
     "@nestjs/core": "*",
-    "reflect-metadata": "*",
+    "reflect-metadata": "*"
+  },
+  "dependencies": {
     "source-map-support": "^0.5.21"
   }
 }
