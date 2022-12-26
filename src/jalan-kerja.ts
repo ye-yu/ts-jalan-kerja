@@ -111,7 +111,8 @@ export class JalanKerjaAsas<
 }
 
 export function compileJalanKerja<T>(
-  Pengendali: NoParamConstructorType<T>
+  Pengendali: NoParamConstructorType<T>,
+  overrideDependencies: IJalanKerjaConfig["dependencies"] = []
 ): IJalanKerja<T> {
   const instance: any = new Pengendali();
   const dependenciesToken = generateClassToken(DEPENDENCIES_TOKEN);
@@ -124,7 +125,10 @@ export function compileJalanKerja<T>(
     );
   }
 
-  const dependenciesMap = dependenciesConfig.reduce((a, b) => {
+  const dependenciesMap = [
+    ...dependenciesConfig,
+    ...overrideDependencies,
+  ].reduce((a, b) => {
     a.set(b.provide, b.use);
     return a;
   }, new Map<any, any>());
@@ -142,17 +146,23 @@ export function compileJalanKerja<T>(
 
   const dependencies = new Map<string | symbol, any[]>();
   for (const { key, paramTypes, stack } of workflowsDefinedSorted) {
-    const notFound = paramTypes.filter((e) => !dependenciesMap.has(e));
+    const notFound = paramTypes
+      .map((dep, index) => ({ dep, index }))
+      .filter((e) => !dependenciesMap.has(e.dep));
     if (notFound.length) {
+      const notFoundToString = notFound
+        .map((e) => `${e.dep.name} (index ${e.index})`)
+        .join(", ");
       const error: any = new Error(
-        `Error initializing workflow for method ` +
-          `'${String(key)}': ` +
-          `Cannot find instance for ` +
-          `${notFound.map((e, i) => `${e.name} (index ${i})`).join(", ")}. ` +
-          `Pass the initializer in the dependency configuration.`
+        `Cannot find instance for method ${String(key)} ` +
+          `[${notFoundToString}]. ` +
+          `Pass the initializer in the dependency configuration. `
       );
 
-      error["cause"] = trimDecoratorStackTrace(new Error(""), stack);
+      error["cause"] = trimDecoratorStackTrace(
+        new Error(notFoundToString),
+        stack
+      );
       throw error;
     }
     dependencies.set(key, paramTypes);
