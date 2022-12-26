@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { JalanKerjaAsas } from "./abstracts/jalan-kerja.abstract";
 import { DEPENDENCIES_TOKEN } from "./constants/dependencies-token.constant";
 import { METHODS_TOKEN } from "./constants/methods-token.constant";
 import { IJalanKerjaConfig } from "./interfaces/jalan-kerja-config.interface";
@@ -8,22 +9,26 @@ import { trimDecoratorStackTrace } from "./utils/trim-decorator-stack-trace.util
 
 type NoParamConstructorType<T> = new () => T;
 
-type WorkflowProfile = {
+type WorkflowProfile<U> = {
   metadata?: Record<string, unknown>;
 } & {
   [workflow: string]: {
     timeTaken?: number;
     order: number;
-    name: string | symbol;
+    name: U;
   };
 };
 
-export class JalanKerjaAsas<
-  T extends { [name: string]: (...p: any[]) => Promise<void> }
-> implements IPengendaliJalanKerja<T>
+type WorkflowType<U> = {
+  order: number;
+  name: U;
+};
+
+export class BalutanJalanKerja<U extends JalanKerjaAsas<U>>
+  implements IPengendaliJalanKerja<U>
 {
   workflowId = "";
-  workflowProfile: WorkflowProfile = {};
+  workflowProfile: WorkflowProfile<keyof U> = {};
   workflowStartTime = 0;
   workflowEndTime = 0;
   shouldStop = false;
@@ -31,14 +36,14 @@ export class JalanKerjaAsas<
   stop = (): boolean => (this.shouldStop = true);
 
   constructor(
-    readonly instance: T,
+    readonly instance: U,
     readonly dependenciesMap = new Map<any, any>(),
     readonly dependencies = new Map<string | symbol, any[]>(),
-    readonly workflows: Array<WorkflowProfile[string]> = [],
-    readonly tearDowns: Array<WorkflowProfile[string]> = []
+    readonly workflows: Array<WorkflowType<keyof U>> = [],
+    readonly tearDowns: Array<WorkflowType<keyof U>> = []
   ) {}
 
-  createFunctionFactory(name: any): () => Promise<void> {
+  createFunctionFactory(name: keyof U): () => Promise<unknown> {
     const instance = this.instance;
     if (name in instance && typeof instance[name] === "function") {
       const dependencies = this.dependencies.get(name as any);
@@ -53,7 +58,8 @@ export class JalanKerjaAsas<
           );
       }
       const deps = dependencies.map((e) => this.dependenciesMap.get(e)());
-      return () => Promise.resolve(instance[name].bind(instance)(...deps));
+      return () =>
+        Promise.resolve((instance[name] as Function).bind(instance)(...deps));
     } else {
       return () =>
         Promise.reject(
@@ -77,8 +83,10 @@ export class JalanKerjaAsas<
       const start = performance.now();
       const workflow = this.createFunctionFactory(name);
       try {
-        await workflow();
+        const value = await workflow();
+        this.instance.setOutputFromWorkflow(name, value);
       } catch (error) {
+        console.error(error);
         this.stop();
       }
       const end = performance.now();
@@ -110,7 +118,7 @@ export class JalanKerjaAsas<
   }
 }
 
-export function compileJalanKerja<T>(
+export function compileJalanKerja<U, T extends JalanKerjaAsas<U>>(
   Pengendali: NoParamConstructorType<T>,
   overrideDependencies: IJalanKerjaConfig["dependencies"] = []
 ): IPengendaliJalanKerja<T> {
@@ -167,7 +175,7 @@ export function compileJalanKerja<T>(
     }
     dependencies.set(key, paramTypes);
   }
-  const pengendali: IPengendaliJalanKerja<T> = new JalanKerjaAsas(
+  const pengendali: IPengendaliJalanKerja<T> = new BalutanJalanKerja(
     instance,
     dependenciesMap,
     dependencies,
